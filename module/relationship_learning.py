@@ -19,7 +19,7 @@ def calibrate(logits, labels):
     """
     scale = nn.Parameter(torch.ones(
         1, 1, dtype=torch.float32), requires_grad=True)
-    optim = torch.optim.LBFGS([scale])
+    optim = torch.optim.LBFGS([scale],max_iter = 50)
 
     def loss():
         optim.zero_grad()
@@ -33,7 +33,7 @@ def calibrate(logits, labels):
         print(f'calibrating, {scale.item()}')
         if state['n_iter'] < optim.state_dict()['param_groups'][0]['max_iter']:
             print(state['n_iter'])
-            optim.state_dict()['param_groups'][0]['max_iter']
+            print(optim.state_dict()['param_groups'][0]['max_iter'])
             break
 
     return scale.item()
