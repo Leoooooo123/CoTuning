@@ -16,6 +16,7 @@ from module.relationship_learning import relationship_learning
 from utils.transforms import get_transforms
 from utils.tools import AccuracyMeter, TenCropsTest
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def get_writer(log_dir):
     return SummaryWriter(log_dir)
