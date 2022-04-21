@@ -176,7 +176,8 @@ def set_seeds(seed):
 def main():
     configs = get_configs()
     print(configs)
-    torch.cuda.set_device(configs.gpu)
+    print(device)
+    torch.cuda.set_device(device)
     set_seeds(configs.seed)
 
     train_loader, determin_train_loader, val_loader, test_loaders = get_data_loader_test(
