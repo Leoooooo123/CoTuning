@@ -32,6 +32,8 @@ def calibrate(logits, labels):
         optim.step(loss)
         print(f'calibrating, {scale.item()}')
         if state['n_iter'] < optim.state_dict()['param_groups'][0]['max_iter']:
+            print(state['n_iter'])
+            optim.state_dict()['param_groups'][0]['max_iter']
             break
 
     return scale.item()
