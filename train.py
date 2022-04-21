@@ -142,7 +142,7 @@ def get_data_loader_test(configs):
                 configs.data_path, split= 'test', 
                 transform=data_transforms['test'+str(i)], download=True
             )
-        for i in range(20)
+        for i in range(10)
     }
 
     # build dataloader
