@@ -1,4 +1,5 @@
 import argparse
+from distutils.command.config import config
 import os
 from time import time
 
@@ -12,7 +13,7 @@ from torchvision import datasets
 from tqdm import tqdm
 
 from module.backbone import ResNet50_F, ResNet50_C
-from module.relationship_learning import relationship_learning
+from module.relationship_learning import relationship_learning, direct_relationship_learning
 from utils.transforms import get_transforms
 from utils.tools import AccuracyMeter, TenCropsTest
 
@@ -70,7 +71,8 @@ def get_configs():
                         type=str, help='Path of saved models')
     parser.add_argument('--visual_dir', default="visual",
                         type=str, help='Path of tensorboard data')
-
+    parser.add_argument("--mode",default="co-tuning",
+                        type=str,help="co-tuning(default) or direct(change representation learning algorithm) or vanilla(vanilla finetuning)")
     configs = parser.parse_args()
 
     return configs
@@ -235,7 +237,13 @@ def main():
             train_imagenet_labels, train_train_labels = get_feature(
                 determin_train_loader)
             val_imagenet_labels, val_train_labels = get_feature(val_loader)
-            relationship = relationship_learning(train_imagenet_labels, train_train_labels,
+            if configs.mode == "vanilla":
+                return
+            if configs.mode == "co-tuning":
+                relationship = relationship_learning(train_imagenet_labels, train_train_labels,
+                                                 val_imagenet_labels, val_train_labels)
+            if configs.mode == "direct":
+                relationship = direct_relationship_learning(train_imagenet_labels, train_train_labels,
                                                  val_imagenet_labels, val_train_labels)
 
             np.save(relationship_path, relationship)
