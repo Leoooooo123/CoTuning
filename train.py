@@ -353,8 +353,7 @@ def co_tuning(configs, train_loader, val_loader, test_loaders, net, relationship
 
     # different learning rates for different layers
     params_list = [{"params": filter(lambda p: p.requires_grad, net.f_net.parameters())},
-                   {"params": filter(lambda p: p.requires_grad,
-                                     net.c_net_1.parameters())},
+                   {"params": filter(lambda p: p.requires_grad, net.c_net_1.parameters())},
                    {"params": filter(lambda p: p.requires_grad, net.c_net_2.parameters()), "lr": configs.lr * 10}]
 
     optimizer = torch.optim.SGD(params_list, lr=configs.lr, weight_decay=configs.weight_decay,
