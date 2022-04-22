@@ -238,6 +238,7 @@ def main():
                 determin_train_loader)
             val_imagenet_labels, val_train_labels = get_feature(val_loader)
             if configs.mode == "vanilla":
+                fine_tuning(configs,train_loader,val_loader,test_loaders,net)
                 return
             if configs.mode == "co-tuning":
                 relationship = relationship_learning(train_imagenet_labels, train_train_labels,
@@ -248,10 +249,102 @@ def main():
 
             np.save(relationship_path, relationship)
 
-    train(configs, train_loader, val_loader, test_loaders, net, relationship)
+    co_tuning(configs, train_loader, val_loader, test_loaders, net, relationship)
 
+def fine_tuning(configs,train_loader,val_loader,test_loaders,net):
+    train_len = len(train_loader) - 1
+    train_iter = iter(train_loader)
 
-def train(configs, train_loader, val_loader, test_loaders, net, relationship):
+    # different learning rates for different layers
+    params_list = [{"params": filter(lambda p: p.requires_grad, net.f_net.parameters())},
+                   {"params": filter(lambda p: p.requires_grad, net.c_net_2.parameters()), "lr": configs.lr * 10}]
+
+    optimizer = torch.optim.SGD(params_list, lr=configs.lr, weight_decay=configs.weight_decay,
+                                momentum=configs.momentum, nesterov=configs.nesterov)
+    milestones = [6000]
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(
+        optimizer, milestones, gamma=configs.gamma)
+
+    # check visual path
+    visual_path = os.path.join(configs.visual_dir, configs.name)
+    if not os.path.exists(visual_path):
+        os.makedirs(visual_path)
+    writer = get_writer(visual_path)
+
+    # check model save path
+    save_path = os.path.join(configs.save_dir, configs.name)
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    for iter_num in range(configs.total_iter):
+        net.train()
+
+        if iter_num % train_len == 0:
+            train_iter = iter(train_loader)
+
+        # Data Stage
+        data_start = time()
+
+        train_inputs, train_labels = next(train_iter)
+        train_inputs, train_labels = train_inputs.cuda(), train_labels.cuda()
+
+        data_duration = time() - data_start
+
+        # Calc Stage
+        calc_start = time()
+
+        _, train_outputs = net(train_inputs)
+
+        loss = nn.CrossEntropyLoss()(train_outputs, train_labels)
+        
+        writer.add_scalar('loss/loss', loss, iter_num)
+
+        net.zero_grad()
+        optimizer.zero_grad()
+
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
+
+        calc_duration = time() - calc_start
+
+        if iter_num % configs.eval_iter == 0:
+            acc_meter = AccuracyMeter(topk=(1,))
+            with torch.no_grad():
+                net.eval()
+                for val_inputs, val_labels in tqdm(val_loader):
+                    val_inputs, val_labels = val_inputs.cuda(), val_labels.cuda()
+                    _, val_outputs = net(val_inputs)
+                    acc_meter.update(val_outputs, val_labels)
+                writer.add_scalar('acc/val_acc', acc_meter.avg[1], iter_num)
+                print(
+                    "Iter: {}/{} Val_Acc: {:2f}".format(
+                        iter_num, configs.total_iter, acc_meter.avg[1])
+                )
+            acc_meter.reset()
+
+        if iter_num % configs.save_iter == 0 and iter_num > 0:
+            test_acc = TenCropsTest(test_loaders, net)
+            writer.add_scalar('acc/test_acc', test_acc, iter_num)
+            print(
+                "Iter: {}/{} Test_Acc: {:2f}".format(
+                    iter_num, configs.total_iter, test_acc)
+            )
+            checkpoint = {
+                'state_dict': net.state_dict(),
+                'iter': iter_num,
+                'acc': test_acc,
+            }
+            torch.save(checkpoint,
+                       os.path.join(save_path, '{}.pkl'.format(iter_num)))
+            print("Model Saved.")
+
+        if iter_num % configs.print_iter == 0:
+            print(
+                "Iter: {}/{} Loss_main: {:2f}, d/c: {}/{}".format(iter_num, configs.total_iter, loss,
+                                                                  data_duration, calc_duration))
+
+def co_tuning(configs, train_loader, val_loader, test_loaders, net, relationship):
     train_len = len(train_loader) - 1
     train_iter = iter(train_loader)
 
