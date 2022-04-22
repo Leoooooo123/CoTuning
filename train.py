@@ -203,6 +203,10 @@ def main():
 
     net = Net().cuda()
 
+    if configs.mode == "vanilla":
+        fine_tuning(configs,train_loader,val_loader,test_loaders,net)
+        return
+
     if os.path.exists(configs.relationship_path):
         print('load pre-computed relationship from {}.'.format(configs.relationship_path))
         relationship = np.load(configs.relationship_path)
@@ -237,9 +241,8 @@ def main():
             train_imagenet_labels, train_train_labels = get_feature(
                 determin_train_loader)
             val_imagenet_labels, val_train_labels = get_feature(val_loader)
-            if configs.mode == "vanilla":
-                fine_tuning(configs,train_loader,val_loader,test_loaders,net)
-                return
+
+            
             if configs.mode == "co-tuning":
                 relationship = relationship_learning(train_imagenet_labels, train_train_labels,
                                                  val_imagenet_labels, val_train_labels)
@@ -248,8 +251,6 @@ def main():
                 relationship = direct_relationship_learning(train_imagenet_labels, train_train_labels,
                                                  val_imagenet_labels, val_train_labels)
                 np.save(relationship_path, relationship)
-
-            
 
     co_tuning(configs, train_loader, val_loader, test_loaders, net, relationship)
 
