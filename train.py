@@ -243,11 +243,13 @@ def main():
             if configs.mode == "co-tuning":
                 relationship = relationship_learning(train_imagenet_labels, train_train_labels,
                                                  val_imagenet_labels, val_train_labels)
+                np.save(relationship_path, relationship)
             if configs.mode == "direct":
                 relationship = direct_relationship_learning(train_imagenet_labels, train_train_labels,
                                                  val_imagenet_labels, val_train_labels)
+                np.save(relationship_path, relationship)
 
-            np.save(relationship_path, relationship)
+            
 
     co_tuning(configs, train_loader, val_loader, test_loaders, net, relationship)
 
