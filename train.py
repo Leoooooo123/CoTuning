@@ -227,7 +227,6 @@ def main():
                     train_labels_list.append(train_labels)
 
                     train_inputs, train_labels = train_inputs.cuda(), train_labels.cuda()
-                    print(train_inputs.device)
                     imagenet_labels, _ = net(train_inputs)
                     imagenet_labels = imagenet_labels.detach().cpu().numpy()
 
