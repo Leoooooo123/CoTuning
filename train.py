@@ -388,8 +388,6 @@ def co_tuning(configs, train_loader, val_loader, test_loaders, net, relationship
         train_inputs, train_labels = train_inputs.cuda(), train_labels.cuda()
 
         data_duration = time() - data_start
-        if iter_num == 0:
-            print(f"device:{train_inputs.device}")
         # Calc Stage
         calc_start = time()
 
