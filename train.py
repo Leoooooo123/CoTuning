@@ -17,7 +17,7 @@ from module.relationship_learning import relationship_learning, direct_relations
 from utils.transforms import get_transforms
 from utils.tools import AccuracyMeter, TenCropsTest
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def get_writer(log_dir):
     return SummaryWriter(log_dir)
@@ -178,8 +178,7 @@ def set_seeds(seed):
 def main():
     configs = get_configs()
     print(configs)
-    print(device)
-    torch.cuda.set_device(device)
+    torch.cuda.set_device(configs.gpu)
     set_seeds(configs.seed)
 
     train_loader, determin_train_loader, val_loader, test_loaders = get_data_loader_test(
@@ -228,6 +227,7 @@ def main():
                     train_labels_list.append(train_labels)
 
                     train_inputs, train_labels = train_inputs.cuda(), train_labels.cuda()
+                    print(train_inputs.device)
                     imagenet_labels, _ = net(train_inputs)
                     imagenet_labels = imagenet_labels.detach().cpu().numpy()
 
@@ -388,7 +388,8 @@ def co_tuning(configs, train_loader, val_loader, test_loaders, net, relationship
         train_inputs, train_labels = train_inputs.cuda(), train_labels.cuda()
 
         data_duration = time() - data_start
-
+        if iter_num == 0:
+            print(f"device:{train_inputs.device}")
         # Calc Stage
         calc_start = time()
 
